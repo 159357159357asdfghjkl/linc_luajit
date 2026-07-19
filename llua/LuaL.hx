@@ -4,13 +4,33 @@ package llua;
 import llua.State;
 import llua.Buffer;
 import llua.Lua;
+import llua.Lua.LuaCFunction;
+import cpp.RawPointer;
+import haxe.extern.Rest;
+import cpp.Callable;
+import cpp.SizeT;
+
+@:structAccess
+@:native("luaL_Reg")
+extern class LuaLReg {
+    public var name:String;
+    public var func:LuaCFunction;
+}
+
+// 将 luaL_Buffer 视为不透明句柄
+@:native("luaL_Buffer")
+extern class LuaLBuffer {}
 
 @:include('linc_lua.h')
 extern class LuaL {
 
+    public static inline var LUA_ERRFILE:Int = 6;
 
-    // @:native('luaL_register')
-    // static function register(l:State, libname:String, lr:luaL_Reg) : Void;
+    @:native('luaL_openlib')
+    static function openlib(l:State, libname:String, lr:LuaLReg, nup:Int) : Void;
+
+    @:native('luaL_register')
+    static function register(l:State, libname:String, lr:LuaLReg) : Void;
 
     @:native('luaL_getmetafield')
     static function getmetafield(l:State, obj:Int, e:String) : Int;
@@ -23,9 +43,6 @@ extern class LuaL {
 
     @:native('luaL_argerror')
     static function argerror(l:State, narg:Int, extramsg:String) : Int;
-
-    @:native('linc::lual::error')
-    static function error(l:State, fmt:String) : Int;
 
     @:native('linc::lual::checklstring')
     static function checklstring(l:State, narg:Int, l:UInt) : String;
@@ -67,8 +84,8 @@ extern class LuaL {
     @:native('luaL_where')
     static function where(l:State, lvl:Int) : Void;
 
-    // @:native('luaL_error')
-    // static function error(l:State, fmt:String, ...) : Int;
+    @:native('luaL_error')
+    static function error(l:State, fmt:String, args:Rest<Dynamic>) : Int;
 
     @:native('luaL_checkoption')
     static function checkoption(l:State, narg:Int, def:String, const:Array<String>) : Int;
@@ -115,6 +132,17 @@ extern class LuaL {
     @:native('luaL_traceback')
     static function traceback(l:State, l2:State, msg:String, level:Int) : Void;
 
+    @:native('luaL_setfuncs')
+    static function setfuncs(L:State, l:LuaLReg, nup:Int):Void;
+
+    @:native('luaL_pushmodule')
+    static function pushmodule(L:State, modname:String, sizehint:Int):Void;
+
+    @:native('luaL_testudata')
+    static function testudata(L:State, ud:Int, tname:String):cpp.RawPointer<Void>;
+
+    @:native('luaL_setmetatable')
+    static function setmetatable(L:State, tname:String):Void;
     /*
     ** ===============================================================
     ** some useful macros
@@ -154,7 +182,6 @@ extern class LuaL {
     @:native('luaL_getmetatable')
     static function getmetatable(l:State, tname:String) : Void;
 
-
     /*
     ** {======================================================
     ** Generic Buffer manipulation
@@ -190,7 +217,6 @@ extern class LuaL {
     static function pushresult(b:BufferRef) : Void;
 
 
-
     /* }====================================================== */
 
 
@@ -204,4 +230,27 @@ extern class LuaL {
     @:native('luaL_openlibs')
     static function openlibs(l:State) : Void;
 
-} //LuaL
+    @:native("luaL_addchar")
+    extern function addchar(B:RawPointer<LuaLBuffer>, c:Int):Void;
+
+    @:native("luaL_addsize")
+    extern function addsize(B:RawPointer<LuaLBuffer>, n:SizeT):Void;
+
+    @:native("luaL_buffinit")
+    extern function buffinit(L:RawPointer<State>, B:RawPointer<LuaLBuffer>):Void;
+
+    @:native("luaL_prepbuffer")
+    extern function prepbuffer(B:RawPointer<LuaLBuffer>):String;
+
+    @:native("luaL_addlstring")
+    extern function addlstring(B:RawPointer<LuaLBuffer>, s:String, l:SizeT):Void;
+
+    @:native("luaL_addstring")
+    extern function addstring(B:RawPointer<LuaLBuffer>, s:String):Void;
+
+    @:native("luaL_addvalue")
+    extern function addvalue(B:RawPointer<LuaLBuffer>):Void;
+
+    @:native("luaL_pushresult")
+    extern function pushresult(B:cpp.RawPointer<LuaLBuffer>):Void;
+}

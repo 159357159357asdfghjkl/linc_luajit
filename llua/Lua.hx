@@ -3,8 +3,38 @@ package llua;
 
 import llua.State;
 import llua.Convert;
+import cpp.RawPointer;
+import cpp.SizeT;
+import cpp.Int64;
+import cpp.Callable;
+import haxe.extern.Rest;
 
+@:structAccess
+@:native("lua_Debug")
+extern class LuaDebug {
+    public var event:Int;
 
+    public var name:String;
+    public var namewhat:String;
+    public var what:String;
+    public var source:String;
+
+    public var currentline:Int;
+    public var nups:Int;
+    public var linedefined:Int;
+    public var lastlinedefined:Int;
+
+    public var short_src:String;
+
+    public var i_ci:Int;
+}
+typedef LuaCFunction = Callable<(State)->Int>;
+typedef LuaReader = Callable<(State, RawPointer<Void>, RawPointer<SizeT>)->String>;
+typedef LuaChunkreader = LuaReader;
+typedef LuaWriter = Callable<(State, RawPointer<Void>, SizeT, RawPointer<Void>)->Int>;
+typedef LuaChunkwriter = LuaWriter;
+typedef LuaAlloc = Callable<(RawPointer<Void>, RawPointer<Void>, SizeT, SizeT)->RawPointer<Void>>;
+typedef LuaHook = Callable<(State, RawPointer<LuaDebug>)->RawPointer<Void>>;
 @:keep
 @:include('linc_lua.h')
 #if !display
@@ -13,8 +43,22 @@ import llua.Convert;
 #end
 extern class Lua {
 
+	/*
+	** Configuration header.
+	** Copyright (C) 2005-2026 Mike Pall. See Copyright Notice in luajit.h
+	*/
+
 	@:native('lua_upvalueindex')
 	static function upvalueindex(i:Int) : Int;
+
+	public static inline var LUA_VERSION = "Lua 5.1";
+	public static inline var LUA_RELEASE = "Lua 5.1.4";
+	public static inline var LUA_VERSION_NUM = 501;
+	public static inline var LUA_COPYRIGHT = "Copyright (C) 1994-2008 Lua.org, PUC-Rio";
+	public static inline var LUA_AUTHORS = "R. Ierusalimschy, L. H. de Figueiredo & W. Celes";
+
+	/* mark for precompiled code (`<esc>Lua') */
+	public static inline var LUA_SIGNATURE = "\033Lua";
 
 	/* option for multiple returns in `lua_pcall' and `lua_call' */
 	public static inline var LUA_MULTRET:Int = (-1);
@@ -59,8 +103,8 @@ extern class Lua {
 
 	/* state manipulation */
 
-	// @:native('lua_newstate')
-	// static function newstate(f:lua_Alloc, ud:Void) : State;
+	@:native('lua_newstate')
+	static function newstate(f:LuaAlloc, ud:RawPointer<Void>) : State;
 
 	@:native('lua_close')
 	static function close(l:State) : Void;
@@ -68,8 +112,8 @@ extern class Lua {
 	@:native('lua_newthread')
 	static function newthread(l:State) : State;
 
-	// @:native('lua_atpanic')
-	// static function atpanic(l:State, panicf:lua_CFunction) : lua_CFunction;
+	@:native('lua_atpanic')
+	static function atpanic(l:State, panicf:LuaCFunction) : LuaCFunction;
 
 
 	/* basic stack manipulation */
@@ -214,14 +258,14 @@ extern class Lua {
 	@:native('lua_pushstring')
 	static function pushstring(l:State, s:String) : Void;
 
-	// @:native('lua_pushvfstring')
-	// static function pushvfstring(l:State, fmt:String, argp:va_list) : Void;
+	@:native('lua_pushvfstring')
+	static function pushvfstring(l:State, fmt:String, argp:RawPointer<Void>) : Void;
 
-	// @:native('lua_pushfstring')
-	// static function pushfstring(l:State, fmt:String, ...) : Void;
+	@:native('lua_pushfstring')
+	static function pushfstring(l:State, fmt:String, args:Rest<Dynamic>) : Void;
 
 	@:native('linc::lua::pushcclosure')
-	static function pushcclosure(l:State, fn:cpp.Callable<StatePointer>, n:Int) : Void;
+	static function pushcclosure(l:State, fn:LuaCFunction, n:Int) : Void;
 
 
 	@:noCompletion
@@ -232,8 +276,8 @@ extern class Lua {
 		_pushboolean(l, b == true ? 1 : 0);
 	}
 
-	// @:native('lua_pushlightuserdata')
-	// static function pushlightuserdata(l:State, p:Void) : Void;
+	@:native('lua_pushlightuserdata')
+	static function pushlightuserdata(l:State, p:RawPointer<Void>) : Void;
 
 	@:native('lua_pushthread')
 	static function pushthread(l:State) : Int;
@@ -295,14 +339,14 @@ extern class Lua {
 	@:native('lua_pcall')
 	static function pcall(l:State, nargs:Int, nresults:Int, errfunc:Int) : Int;
 
-	// @:native('lua_cpcall') //?
-	// static function cpcall(l:State, func:lua_CFunction, ud:Void) : Int;
+	@:native('lua_cpcall')
+	static function cpcall(l:State, func:LuaCFunction, ud:Void) : Int;
 
-	// @:native('lua_load') //?
-	// static function load(l:State, reader:lua_Reader, data:Void, chunkname:String) : Int;
+	@:native('lua_load')
+	static function load(l:State, reader:LuaReader, data:Void, chunkname:String) : Int;
 
-	// @:native('lua_dump') //?
-	// static function dump(l:State, writer:lua_Writer, data:Void) : Int;
+	@:native('lua_dump')
+	static function dump(l:State, writer:LuaWriter, data:Void) : Int;
 
 
 	/* coroutine functions */
@@ -327,7 +371,7 @@ extern class Lua {
 	public static inline var LUA_GCSTEP:Int         = 5;
 	public static inline var LUA_GCSETPAUSE:Int     = 6;
 	public static inline var LUA_GCSETSTEPMUL:Int   = 7;
-
+	public static inline var LUA_GCISRUNNING = 9;
 	@:native('lua_gc')
 	static function gc(l:State, what:Int, data:Int) : Int;
 
@@ -343,11 +387,11 @@ extern class Lua {
 	@:native('lua_concat')
 	static function concat(l:State, n:Int) : Void;
 
-	// @:native('lua_getallocf') //?
-	// static function getallocf(l:State, ud:Void) : lua_Alloc;
+	@:native('lua_getallocf')
+	static function getallocf(l:State, ud:RawPointer<RawPointer<Void>>) : LuaAlloc;
 
-	// @:native('lua_setallocf') //?
-	// static function setallocf(l:State, f:lua_Alloc, ud:Void) : Void;
+	@:native('lua_setallocf')
+	static function setallocf(l:State, f:LuaAlloc, ud:RawPointer<Void>) : Void;
 
 
 	/* some useful macros */
@@ -408,6 +452,12 @@ extern class Lua {
 	static function setlevel(from:State, to:State) : Void;
 
 
+	public inline static function open() LuaL.newstate();
+
+	public inline static function getregistry(L:State) pushvalue(L, LUA_REGISTRYINDEX);
+
+	public inline static function getgccount(L:State) gc(L, LUA_GCCOUNT, 0);
+
 	/*
 	** {======================================================================
 	** Debug API
@@ -433,17 +483,17 @@ extern class Lua {
 
 	/* Functions to be called by the debuger in specific events */
 
-	@:native('linc::lua::getstack') // is it works ?
-	static function getstack(l:State, level:Int, ar:Lua_Debug) : Int;
+	@:native('lua_getstack')
+	static function getstack(l:State, level:Int, ar:LuaDebug) : Int;
 
-	@:native('linc::lua::getinfo') //  is it works ?
-	static function getinfo(l:State, what:String, ar:Lua_Debug) : Int;
+	@:native('lua_getinfo')
+	static function getinfo(l:State, what:String, ar:LuaDebug) : Int;
 
-	// @:native('linc::lua::getlocal') // TODO
-	// static function getlocal(l:State, ar:Lua_Debug, n:Int) : String;
+	@:native('lua_getlocal')
+	static function getlocal(l:State, ar:LuaDebug, n:Int) : String;
 
-	// @:native('lua_setlocal') // TODO
-	// static function setlocal (l:State, ar:lua_Debug, n:Int) : String;
+	@:native('lua_setlocal')
+	static function setlocal (l:State, ar:LuaDebug, n:Int) : String;
 
 	@:native('lua_getupvalue')
 	static function getupvalue(l:State, funcindex:Int, n:Int) : String;
@@ -451,11 +501,11 @@ extern class Lua {
 	@:native('lua_setupvalue')
 	static function setupvalue (l:State, funcindex:Int, n:Int) : String;
 
-	// @:native('lua_sethook')
-	// static function sethook (l:State, f:lua_Hook, mask:Int, count:Int) : Int;
+	@:native('lua_sethook')
+	static function sethook (l:State, f:LuaHook, mask:Int, count:Int) : Int;
 
-	// @:native('lua_gethook')
-	// static function gethook(l:State) : lua_Hook;
+	@:native('lua_gethook')
+	static function gethook(l:State) : LuaHook;
 
 	@:native('lua_gethookmask')
 	static function gethookmask(l:State) : Int;
@@ -473,9 +523,21 @@ extern class Lua {
 	static function upvaluejoin(l:State, idx1:Int, n1:Int, idx2:Int, n2:Int) : Void;
 
 
-	// @:native('lua_loadx')
-	// static function loadx(l:State, reader:lua_Reader, dt:Void, chunkname:String, mode:String) : Int;
+	@:native('lua_loadx')
+	static function loadx(l:State, reader:LuaReader, dt:Void, chunkname:String, mode:String) : Int;
 
+	@:native('lua_copy')
+	static function copy(l:State, fromidx:Int, toidx:Int) : Void;
+
+	@:native('lua_tonumberx')
+	static function tonumberx(l:State, idx:Int, isnum:RawPointer<Int>) : Float;
+
+	@:native('lua_tointegerx')
+	static function tointegerx(l:State, idx:Int, isnum:RawPointer<Int>) : Int64;
+
+	/* From Lua 5.3. */
+	@:native('lua_isyieldable')
+	static function isyieldable (l:State):Int;
 	/* compatibility with ref system */
 
 	@:native('lua_ref')
@@ -593,23 +655,6 @@ class Lua_helper {
 		}
 		return 0;
 
-	} 
-
-}
-
-typedef Lua_Debug = {
-
-	@:optional var event:Int;
-	@:optional var name:String;             // (n)
-	@:optional var namewhat:String;         // (n) `global', `local', `field', `method'
-	@:optional var what:String;             // (S) `Lua', `C', `main', `tail'
-	@:optional var source:String;           // (S)
-	@:optional var currentline:Int;         // (l)
-	@:optional var nups:Int;                // (u) number of upvalues
-	@:optional var linedefined:Int;         // (S)
-	@:optional var lastlinedefined:Int;     // (S)
-	@:optional var short_src:Array<String>; // (S)
-
-	@:optional var i_ci:Int;       // private
+	}
 
 }

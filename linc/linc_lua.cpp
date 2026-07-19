@@ -47,78 +47,7 @@ namespace linc {
             return ::String(lua_typename(l, v));
 
         }
-
-        int getstack(lua_State *L, int level, Dynamic ar){
-
-            lua_Debug dbg;
-
-            int ret = lua_getstack(L, level, &dbg);
-
-            ar->__FieldRef(HX_CSTRING("i_ci")) = (int)dbg.i_ci;
-
-            return ret;
-
-        }
-
-        int getinfo(lua_State *L, const char *what, Dynamic ar){
-
-            lua_Debug dbg;
-
-            dbg.i_ci = ar->__FieldRef(HX_CSTRING("i_ci"));
-
-            int ret = lua_getinfo(L, what, &dbg);
-
-            if (strchr(what, 'S')) {
-
-                if (dbg.source != NULL) {
-                    ar->__FieldRef(HX_CSTRING("source")) = ::String(dbg.source);
-                }
-
-                if (dbg.short_src != NULL) {
-                    ar->__FieldRef(HX_CSTRING("short_src")) = ::String(dbg.short_src);
-                }
-
-                if (dbg.linedefined != NULL) {
-                    ar->__FieldRef(HX_CSTRING("linedefined")) = (int)dbg.linedefined;
-                }
-
-                if (dbg.lastlinedefined != NULL) {
-                    ar->__FieldRef(HX_CSTRING("lastlinedefined")) = (int)dbg.lastlinedefined;
-                }
-
-                if (dbg.what != NULL) {
-                    ar->__FieldRef(HX_CSTRING("what")) = ::String(dbg.what);
-                }
-
-            }
-
-            if (strchr(what, 'n')) {
-                if (dbg.name != NULL) {
-                    ar->__FieldRef(HX_CSTRING("name")) = ::String(dbg.name);
-                }
-
-                if (dbg.namewhat != NULL) {
-                    ar->__FieldRef(HX_CSTRING("namewhat")) = ::String(dbg.namewhat);
-                }
-            }
-
-            if (strchr(what, 'l')) {
-                if (dbg.currentline != NULL) {
-                    ar->__FieldRef(HX_CSTRING("currentline")) = (int)dbg.currentline;
-                }
-            }
-
-            if (strchr(what, 'u')) {
-                if (dbg.nups != NULL) {
-                    ar->__FieldRef(HX_CSTRING("nups")) = (int)dbg.nups;
-                }
-            }
-
-            return ret;
-
-        }
-
-    } //lua
+    }
 
     namespace lual {
 

@@ -27,6 +27,9 @@ extern class LuaOpen {
 
     @:native('luaopen_package')
     static function lpackage(l:State) : Int; // renamed from "package"
+    
+    @:native('luaopen_package')
+    static function package(l:State) : Int;
 
     @:native('luaopen_debug')
     static function debug(l:State) : Int;
@@ -39,5 +42,8 @@ extern class LuaOpen {
 
     @:native('luaopen_ffi')
     static function ffi(l:State) : Int;
+
+    @:native('luaopen_string_buffer')
+    static function string_buffer(l:State) : Int;
 
 } // Luaopen

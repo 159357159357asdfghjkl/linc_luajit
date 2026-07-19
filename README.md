@@ -1,3 +1,5 @@
+# this modified version of linc_luajit use 2.1 version
+
 # linc/LuaJIT
 Haxe/hxcpp @:native bindings for [LuaJIT](http://luajit.org/).
 
