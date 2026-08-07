@@ -12,10 +12,7 @@ import cpp.SizeT;
 
 @:structAccess
 @:native("luaL_Reg")
-extern class LuaLReg {
-    public var name:String;
-    public var func:LuaCFunction;
-}
+extern class LuaLReg {}
 
 // 将 luaL_Buffer 视为不透明句柄
 @:native("luaL_Buffer")

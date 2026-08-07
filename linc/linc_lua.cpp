@@ -4,19 +4,16 @@
 #include "./linc_lua.h"
 #include "../lib/lua/src/lua.hpp"
 
+#include <functional>
+
+template<typename Signature>
+::cpp::Function<Signature> make_haxe_function(const std::function<Signature>& func) {
+    return ::cpp::Function<Signature>::create(func);
+}
+
 namespace linc {
 
     namespace lua {
-
-        ::String version(){
-
-        	return ::String(LUA_VERSION);
-
-        }
-
-        ::String versionJIT(){
-        	return ::String(LUAJIT_VERSION);
-        }
 
         ::String tostring(lua_State *l, int v){
 
@@ -42,10 +39,49 @@ namespace linc {
             lua_pushcfunction(l, (lua_CFunction)fn);
         }
 
+        int load(lua_State *L, ::cpp::Function<const char *(lua_State*, void*, size_t*)> reader, void *dt, const char *chunkname) {
+            return lua_load(L, (lua_Reader)reader, dt, chunkname);
+        }
+
+        int dump(lua_State *L, ::cpp::Function<int(lua_State*, const void*, size_t, void*)> writer, void *data) {
+            return lua_dump(L, (lua_Writer)writer, data);
+        }
+
+        int loadx(lua_State *L, ::cpp::Function<const char *(lua_State *, void *, size_t *)> reader, void *dt, const char *chunkname, const char *mode) {
+            return lua_loadx(L, (lua_Reader)reader, dt, chunkname, mode);
+        }
+
+        lua_State * newstate(::cpp::Function<void*(void *, void *, size_t, size_t)> f, void *ud) {
+            return lua_newstate((lua_Alloc)f, ud);
+        }
+
+        ::cpp::Function<const char *(lua_State *, void *, size_t *)> getallocf(lua_State *L, void **ud) {
+            return ::cpp::Function<const char *(lua_State *, void *, size_t *)>(::lua_getallocf(L, ud));
+        }
+        void setallocf(lua_State *L, ::cpp::Function<void*(void *, void *, size_t, size_t)> f, void *ud) {
+            lua_setallocf(L, (lua_Alloc)f, ud);
+        }
+
+        int cpcall(lua_State *L, ::cpp::Function<int(lua_State*)> func, void *ud){
+            return lua_cpcall(L, (lua_CFunction)func, ud);
+        }
+
+        ::cpp::Function<int(lua_State*)> atpanic(lua_State *L, ::cpp::Function<int(lua_State*)>panicf) {
+            return lua_atpanic(L, (lua_CFunction)panicf);
+        }
+
         ::String _typename(lua_State *l, int v){
 
             return ::String(lua_typename(l, v));
 
+        }
+
+        int sethook(lua_State *L, ::cpp::Function<void(lua_State *, lua_Debug *)> func, int mask, int count) {
+            return lua_sethook(L, (lua_Hook)func, mask, count);
+        }
+
+        ::cpp::Function<void(lua_State *, lua_Debug *)> gethook(lua_State *L) {
+            return ::cpp::Function<void(lua_State *, lua_Debug *)>(::lua_gethook(L));
         }
     }
 

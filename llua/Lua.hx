@@ -11,28 +11,11 @@ import haxe.extern.Rest;
 
 @:structAccess
 @:native("lua_Debug")
-extern class LuaDebug {
-    public var event:Int;
+extern class LuaDebug {}
 
-    public var name:String;
-    public var namewhat:String;
-    public var what:String;
-    public var source:String;
-
-    public var currentline:Int;
-    public var nups:Int;
-    public var linedefined:Int;
-    public var lastlinedefined:Int;
-
-    public var short_src:String;
-
-    public var i_ci:Int;
-}
 typedef LuaCFunction = Callable<(State)->Int>;
 typedef LuaReader = Callable<(State, RawPointer<Void>, RawPointer<SizeT>)->String>;
-typedef LuaChunkreader = LuaReader;
 typedef LuaWriter = Callable<(State, RawPointer<Void>, SizeT, RawPointer<Void>)->Int>;
-typedef LuaChunkwriter = LuaWriter;
 typedef LuaAlloc = Callable<(RawPointer<Void>, RawPointer<Void>, SizeT, SizeT)->RawPointer<Void>>;
 typedef LuaHook = Callable<(State, RawPointer<LuaDebug>)->RawPointer<Void>>;
 @:keep
@@ -103,7 +86,7 @@ extern class Lua {
 
 	/* state manipulation */
 
-	@:native('lua_newstate')
+	@:native('linc::lua::newstate')
 	static function newstate(f:LuaAlloc, ud:RawPointer<Void>) : State;
 
 	@:native('lua_close')
@@ -112,7 +95,7 @@ extern class Lua {
 	@:native('lua_newthread')
 	static function newthread(l:State) : State;
 
-	@:native('lua_atpanic')
+	@:native('linc::lua::atpanic')
 	static function atpanic(l:State, panicf:LuaCFunction) : LuaCFunction;
 
 
@@ -229,7 +212,7 @@ extern class Lua {
 	static function objlen(l:State, idx:Int) : Int;
 
 	@:native('linc::lua::tocfunction')
-	static function tocfunction(l:State, idx:Int):cpp.Callable<StatePointer->Int>;
+	static function tocfunction(l:State, idx:Int):LuaCFunction;
 
 	@:native('lua_touserdata')
 	static function touserdata(l:State, idx:Int) : Void;
@@ -339,14 +322,14 @@ extern class Lua {
 	@:native('lua_pcall')
 	static function pcall(l:State, nargs:Int, nresults:Int, errfunc:Int) : Int;
 
-	@:native('lua_cpcall')
-	static function cpcall(l:State, func:LuaCFunction, ud:Void) : Int;
+	@:native('linc::lua::cpcall')
+	static function cpcall(l:State, func:LuaCFunction, ud:RawPointer<Void>) : Int;
 
-	@:native('lua_load')
-	static function load(l:State, reader:LuaReader, data:Void, chunkname:String) : Int;
+	@:native('linc::lua::load')
+	static function load(l:State, reader:LuaReader, data:RawPointer<Void>, chunkname:String) : Int;
 
-	@:native('lua_dump')
-	static function dump(l:State, writer:LuaWriter, data:Void) : Int;
+	@:native('linc::lua::dump')
+	static function dump(l:State, writer:LuaWriter, data:RawPointer<Void>) : Int;
 
 
 	/* coroutine functions */
@@ -387,10 +370,10 @@ extern class Lua {
 	@:native('lua_concat')
 	static function concat(l:State, n:Int) : Void;
 
-	@:native('lua_getallocf')
+	@:native('linc::lua::getallocf')
 	static function getallocf(l:State, ud:RawPointer<RawPointer<Void>>) : LuaAlloc;
 
-	@:native('lua_setallocf')
+	@:native('linc::lua::setallocf')
 	static function setallocf(l:State, f:LuaAlloc, ud:RawPointer<Void>) : Void;
 
 
@@ -411,7 +394,7 @@ extern class Lua {
 	}
 
  	@:native('linc::lua::pushcfunction') //?
-	static function pushcfunction(l:State, f:cpp.Callable<StatePointer->Int>) : Void;
+	static function pushcfunction(l:State, f:LuaCFunction) : Void;
 
 	@:native('lua_strlen')
 	static function strlen(l:State, idx:Int) : Int;
@@ -501,10 +484,10 @@ extern class Lua {
 	@:native('lua_setupvalue')
 	static function setupvalue (l:State, funcindex:Int, n:Int) : String;
 
-	@:native('lua_sethook')
+	@:native('linc::lua::sethook')
 	static function sethook (l:State, f:LuaHook, mask:Int, count:Int) : Int;
 
-	@:native('lua_gethook')
+	@:native('linc::lua::gethook')
 	static function gethook(l:State) : LuaHook;
 
 	@:native('lua_gethookmask')
@@ -523,8 +506,8 @@ extern class Lua {
 	static function upvaluejoin(l:State, idx1:Int, n1:Int, idx2:Int, n2:Int) : Void;
 
 
-	@:native('lua_loadx')
-	static function loadx(l:State, reader:LuaReader, dt:Void, chunkname:String, mode:String) : Int;
+	@:native('linc::lua::loadx')
+	static function loadx(l:State, reader:LuaReader, dt:RawPointer<Void>, chunkname:String, mode:String) : Int;
 
 	@:native('lua_copy')
 	static function copy(l:State, fromidx:Int, toidx:Int) : Void;
@@ -548,16 +531,6 @@ extern class Lua {
 
 	@:native('lua_getref')
 	static function getref(l:State, ref:Int) : Void;
-
-
-	/* unofficial API helpers */
-
-
-	@:native('linc::lua::version')
-	static function version() : String;
-
-	@:native('linc::lua::versionJIT')
-	static function versionJIT() : String;
 
 	static inline function init_callbacks(l:State) : Void {
 
