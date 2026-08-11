@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # this modified version of linc_luajit use 2.1 version
 
 # linc/LuaJIT
@@ -48,3 +49,7 @@ class Test {
 
 }
 ```
+=======
+this is a extended version of linc_luajit(nebulazorua & superpowers04's fork)
+i updated luajit to the newest version
+>>>>>>> b2bf42ef68159bc2e4e0184e49e28f52a65b2115
